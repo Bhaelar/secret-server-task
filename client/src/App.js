@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import "./App.css";
+import Form from "./Form";
+import Secret from "./Secret";
 const url = "https://hidden-scrubland-18020.herokuapp.com/api/v1/secret/";
 function App() {
   const [secrets, setSecrets] = useState([]);
-  const [formData, setFormData] = useState({
-    secret: "",
-    expireAfter: "",
-  });
+  const [hash, setHash] = useState([]);
   const [submitted, setSubmitted] = useState(0);
-  const { secret, expireAfter } = formData;
+  const [searchResult, setSearchResult] = useState(null);
+
   useEffect(() => {
     async function fetchData() {
       try {
@@ -31,11 +31,7 @@ function App() {
     fetchData();
   }, [submitted]);
 
-  const onChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const onSubmit = (e) => {
+  const onSubmit = (e, formData) => {
     e.preventDefault();
     try {
       axios
@@ -43,6 +39,7 @@ function App() {
         .then(function (response) {
           // handle success
           console.log(response);
+          setSearchResult(null);
           setSubmitted(submitted + 1);
         })
         .catch(function (error) {
@@ -52,60 +49,79 @@ function App() {
     } catch (error) {
       console.log(error);
     }
-  }
+  };
+
+  const onSearchChange = (e) => {
+    setHash(e.target.value);
+  };
+
+  const onSearch = (e) => {
+    e.preventDefault();
+    try {
+      axios
+        .get(`${url}/${hash}`)
+        .then(function (response) {
+          // handle success
+          console.log(response);
+          setSearchResult(response.data);
+        })
+        .catch(function (error) {
+          // handle error
+          setSearchResult({});
+          console.log(error);
+        });
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   return (
     <div className="container">
       <div className="">
         <h1>Welcome to secret server</h1>
-        <div className="form">
-          <form onSubmit={onSubmit}>
+        <Form onSubmit={onSubmit} />
+      </div>
+      <div className="pt-3">
+        <h3>Find Secret By Hash</h3>
+        <div>
+          <form onSubmit={onSearch}>
             <div className="mb-3">
-              <label htmlFor="secretText" className="form-label">
-                Secret text
+              <label htmlFor="hash" className="form-label">
+                Hash
               </label>
               <input
                 type="text"
                 className="form-control"
-                id="secretText"
-                name="secret"
-                value={secret}
-                onChange={onChange}
+                id="hash"
+                name="hash"
+                value={hash}
+                onChange={onSearchChange}
               />
             </div>
-            <div className="mb-3">
-              <label htmlFor="expiresAfter" className="form-label">
-                Expires After
-              </label>
-              <input
-                type="number"
-                className="form-control"
-                id="expiresAfter"
-                name="expireAfter"
-                value={expireAfter}
-                onChange={onChange}
-              />
-            </div>
-            <button type="submit" className="btn btn-primary">
-              Submit
+            <button type="submit" className="btn btn-secondary">
+              Search
             </button>
           </form>
         </div>
       </div>
-      {secrets.length > 0 && (
+      {secrets.length > 0 && !searchResult && (
         <div className="container secret-container">
           <h3 className="pt-3">Secrets list</h3>
-          {secrets.map((secret, id) => (
-            <div className="row secret-row" key={id}>
-              <div><b>Hash:</b> {secret.hash}</div>
-              <div><b>Secret:</b> {secret.secretText}</div>
-              <div><b>Created at:</b> {secret.createdAt}</div>
-              <div>
-                <b>Expires at:</b>{" "}
-                {secret.expiresAt === null ? "Never" : secret.expiresAt}
+          {secrets &&
+            secrets.map((secret, id) => (
+              <div className="row secret-row" key={id}>
+                <Secret secret={secret} />
               </div>
-            </div>
-          ))}
+            ))}
         </div>
+      )}
+      {searchResult && searchResult.hash && (
+        <div className="container secret-container">
+          <Secret secret={searchResult} />
+        </div>
+      )}
+      {searchResult && !searchResult.hash && (
+        <div className="container secret-container">Secret was not found</div>
       )}
     </div>
   );
