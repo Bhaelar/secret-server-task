@@ -38,6 +38,22 @@ const addSecret = async (req, res) => {
   }
 };
 
+// @desc    Get secrets
+// @route   GET /api/v1/secret/
+// @access  Public
+const getSecrets = async (req, res) => {
+    const findSecret = await Secret.find();
+  
+    if (findSecret) {
+      res.status(200).json({
+        data: findSecret,
+        message: "Successfully fetched secrets",
+      });
+    } else {
+      return res.status(404).json({ errors: [{ msg: "Secret not found" }] });
+    }
+  };
+
 // @desc    Find a secret by hash
 // @route   GET /api/v1/secret/:hash
 // @access  Public
@@ -59,4 +75,4 @@ const getSecretByHash = async (req, res) => {
   }
 };
 
-module.exports = { addSecret, getSecretByHash };
+module.exports = { addSecret, getSecrets, getSecretByHash };
